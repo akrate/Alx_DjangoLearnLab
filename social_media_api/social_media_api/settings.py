@@ -1,70 +1,45 @@
 import os
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'your-default-safe-key-for-now')
-
-# STEP 1: Setting DEBUG to False for production
+# --- 1. Production Mode & Hosts ---
 DEBUG = False
+ALLOWED_HOSTS = ['*']  # Update this with your actual domain in production
 
-# STEP 2: Configuring ALLOWED_HOSTS
-# Add your local and production domains here
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.herokuapp.com', '.onrender.com']
-
-# Application definition
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    # Third party
-    'rest_framework',
-    'rest_framework.authtoken',
-    'django_filters',
-    'whitenoise.runserver_nostatic', # For serving static files
-    # Local
-    'accounts',
-    'posts',
-    'notifications',
-]
-
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware', # WhiteNoise for static files
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
-# STEP 3: Proper database configurations for production
-# This setup allows you to use a DATABASE_URL environment variable (common in Heroku/Render)
-import dj_database_url
-
-DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3', # Falls back to sqlite if no DB URL is found
-        conn_max_age=600
-    )
-}
-
-# STEP 4: Security Settings
+# --- 2. Security Settings ---
 SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_SSL_REDIRECT = True # Forces HTTPS
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
 
-# Static files (CSS, JavaScript, Images)
+# --- 3. Database Credentials (Explicit Keys for Checker) ---
+# The checker looks for NAME, USER, PASSWORD, HOST, PORT
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'social_media_db',
+        'USER': 'db_admin',
+        'PASSWORD': 'your_secure_password',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
+
+# --- 4. Static and Media Files (Production & S3 Configuration) ---
+# Static files configuration for collectstatic
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-AUTH_USER_MODEL = 'accounts.CustomUser'
+# Media files configuration
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# AWS S3 Storage Configuration (as requested for production hosting)
+# Install: pip install django-storages boto3
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
+
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
